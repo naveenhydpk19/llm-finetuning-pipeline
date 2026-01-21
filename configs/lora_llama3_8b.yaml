@@ -1,0 +1,58 @@
+# LoRA fine-tuning config for Llama-3-8B
+# Usage: python scripts/train.py --config configs/lora_llama3_8b.yaml
+
+base_model: meta-llama/Meta-Llama-3-8B-Instruct
+
+sagemaker:
+  instance_type: ml.p3.2xlarge
+  instance_count: 1
+  volume_size_gb: 100
+  max_runtime_hours: 6
+  role_arn: arn:aws:iam::ACCOUNT_ID:role/SageMakerExecutionRole
+  output_s3: s3://ml-platform-artifacts/fine-tuned-models
+
+lora:
+  r: 16                    # LoRA rank
+  lora_alpha: 32
+  lora_dropout: 0.05
+  target_modules:
+    - q_proj
+    - v_proj
+    - k_proj
+    - o_proj
+  bias: none
+  task_type: CAUSAL_LM
+
+training:
+  num_epochs: 3
+  per_device_train_batch_size: 4
+  gradient_accumulation_steps: 8   # effective batch = 32
+  learning_rate: 2.0e-4
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.03
+  max_seq_length: 2048
+  bf16: true
+  gradient_checkpointing: true
+  dataloader_num_workers: 4
+  logging_steps: 10
+  save_steps: 100
+  eval_steps: 100
+
+data:
+  format: instruction_tuning      # or: completion, chat
+  train_split: 0.95
+  val_split: 0.05
+  max_samples: null               # null = use all
+
+evaluation:
+  run_after_training: true
+  ragas_metrics:
+    - faithfulness
+    - answer_relevancy
+  custom_benchmarks:
+    - domain_accuracy
+    - hallucination_rate
+  promotion_thresholds:
+    domain_accuracy: 0.97
+    hallucination_rate: 0.03     # max allowed
+    faithfulness: 0.85
