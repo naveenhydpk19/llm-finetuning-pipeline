@@ -8,8 +8,14 @@ import hashlib
 import logging
 from typing import List
 
-from datasets import Dataset, DatasetDict, load_dataset
-from transformers import AutoTokenizer
+try:
+    from datasets import Dataset, DatasetDict, load_dataset
+except ImportError:
+    Dataset = DatasetDict = load_dataset = None
+try:
+    from transformers import AutoTokenizer
+except ImportError:
+    AutoTokenizer = None
 
 logger = logging.getLogger(__name__)
 
